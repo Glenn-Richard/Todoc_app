@@ -2,6 +2,7 @@ package com.example.cleanup.ui;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,14 +18,17 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import com.example.cleanup.R;
+import com.example.cleanup.database.DatabaseManagerRoom;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 /**
  * <p>Home activity of the application which is displayed when the user opens the app.</p>
@@ -45,12 +49,14 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     private ArrayList<Task> tasks = new ArrayList<>();
 
 
-    DatabaseOpenHelper database = new DatabaseOpenHelper(MainActivity.this);
+    ArrayList<Task> projects_sorted = new ArrayList<>();
+
+    private  DatabaseManagerRoom database;
 
     /**
      * The adapter which handles the list of tasks
      */
-    private final TasksAdapter adapter = new TasksAdapter(tasks, this);
+    private TasksAdapter adapter;
 
     /**
      * The sort method to be used to display tasks
@@ -100,14 +106,26 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
 
         listTasks = findViewById(R.id.list_tasks);
         lblNoTasks = findViewById(R.id.lbl_no_task);
+           database = Room.databaseBuilder(this.getApplicationContext(),
+                DatabaseManagerRoom.class, "database.db")
+                .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
+                .build();
+          if( database.projectDao().getProjects().size()==0){
+              for(Project project : allProjects){
+                  database.projectDao().insertProject(project);
+              }
+          }
+        tasks.addAll(new ArrayList(database.taskDao().getTasks()));
+        projects_sorted.addAll(tasks);
 
-        tasks = database.readTasksFromDatabase();
-        database.close();
+        adapter = new TasksAdapter(tasks, this);
 
         listTasks.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         listTasks.setAdapter(adapter);
 
         findViewById(R.id.fab_add_task).setOnClickListener(view -> showAddTaskDialog());
+        updateTasks();
     }
 
     @Override
@@ -120,17 +138,16 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.filter_alphabetical) {
-            sortMethod = SortMethod.ALPHABETICAL;
-        } else if (id == R.id.filter_alphabetical_inverted) {
-            sortMethod = SortMethod.ALPHABETICAL_INVERTED;
+        if (id == R.id.projet_tartampion||id == R.id.projet_Lucidia||id == R.id.projet_Circus) {
+            adapter.updateTasks(sortTasksByProject(tasks,id));
         } else if (id == R.id.filter_oldest_first) {
             sortMethod = SortMethod.OLD_FIRST;
+            updateTasks();
         } else if (id == R.id.filter_recent_first) {
             sortMethod = SortMethod.RECENT_FIRST;
+            updateTasks();
         }
 
-        updateTasks();
 
         return super.onOptionsItemSelected(item);
     }
@@ -138,6 +155,8 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     @Override
     public void onDeleteTask(Task task) {
         tasks.remove(task);
+
+        database.taskDao().deleteTask(task);
         updateTasks();
     }
 
@@ -164,12 +183,9 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             }
             // If both project and name of the task have been set
             else if (taskProject != null) {
-                // TODO: Replace this by id of persisted task
-                long id = (long) (Math.random() * 50000);
 
 
                 Task task = new Task(
-                        id,
                         taskProject.getId(),
                         taskName,
                         new Date().getTime()
@@ -211,8 +227,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      */
     private void addTask(@NonNull Task task) {
         tasks.add(task);
-        database.insertTask(task);
-        database.close();
+        database.taskDao().insertTask(task);
         updateTasks();
     }
 
@@ -220,6 +235,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      * Updates the list of tasks in the UI
      */
     private void updateTasks() {
+        Log.d("Glen", String.valueOf(tasks.size()));
         if (tasks.size() == 0) {
             lblNoTasks.setVisibility(View.VISIBLE);
             listTasks.setVisibility(View.GONE);
@@ -227,24 +243,44 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             lblNoTasks.setVisibility(View.GONE);
             listTasks.setVisibility(View.VISIBLE);
             switch (sortMethod) {
-                case ALPHABETICAL:
-                    Collections.sort(tasks, new Task.TaskAZComparator());
-                    break;
-                case ALPHABETICAL_INVERTED:
-                    Collections.sort(tasks, new Task.TaskZAComparator());
-                    break;
                 case RECENT_FIRST:
                     Collections.sort(tasks, new Task.TaskRecentComparator());
                     break;
                 case OLD_FIRST:
                     Collections.sort(tasks, new Task.TaskOldComparator());
                     break;
-
             }
             adapter.updateTasks(tasks);
         }
     }
-
+    public ArrayList<Task> sortTasksByProject(List<Task> taskList, int id){
+        ArrayList<Task> sorted_tasks = new ArrayList<>();
+        if (id == R.id.projet_tartampion){
+            for (int i=0;i<taskList.size();i++){
+                if (taskList.get(i).getProjectId()==1){
+                    sorted_tasks.add(taskList.get(i));
+                }
+            }
+            return sorted_tasks;
+        }
+        if (id == R.id.projet_Lucidia){
+            for (int i=0;i<taskList.size();i++){
+                if (taskList.get(i).getProjectId()==2){
+                    sorted_tasks.add(taskList.get(i));
+                }
+            }
+            return sorted_tasks;
+        }
+        if (id == R.id.projet_Circus){
+            for (int i=0;i<taskList.size();i++){
+                if (taskList.get(i).getProjectId()==3){
+                    sorted_tasks.add(taskList.get(i));
+                }
+            }
+            return sorted_tasks;
+        }
+        return sorted_tasks;
+    }
     /**
      * Returns the dialog allowing the user to create a new task.
      *
@@ -292,7 +328,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      * Sets the data of the Spinner with projects to associate to a new task
      */
     private void populateDialogSpinner() {
-        final ArrayAdapter<Project> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, allProjects);
+        final ArrayAdapter<Project> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, database.projectDao().getProjects());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (dialogSpinner != null) {
             dialogSpinner.setAdapter(adapter);
@@ -303,14 +339,6 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      * List of all possible sort methods for task
      */
     private enum SortMethod {
-        /**
-         * Sort alphabetical by name
-         */
-        ALPHABETICAL,
-        /**
-         * Inverted sort alphabetical by name
-         */
-        ALPHABETICAL_INVERTED,
         /**
          * Lastly created first
          */

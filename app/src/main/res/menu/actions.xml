@@ -11,13 +11,23 @@
         app:showAsAction="ifRoom">
         <menu>
             <item
-                android:id="@+id/filter_alphabetical"
-                android:title="@string/sort_alphabetical"
-                app:showAsAction="never|withText" />
-            <item
-                android:id="@+id/filter_alphabetical_inverted"
-                android:title="@string/sort_alphabetical_invert"
-                app:showAsAction="never|withText" />
+                android:title="@string/sort_project"
+                app:showAsAction="never|withText" >
+                <menu>
+                    <item
+                        android:id="@+id/projet_tartampion"
+                        android:title="@string/projet_tartampion"
+                        app:showAsAction="never|withText"/>
+                    <item
+                        android:id="@+id/projet_Lucidia"
+                        android:title="@string/projet_Lucidia"
+                        app:showAsAction="never|withText"/>
+                    <item
+                        android:id="@+id/projet_Circus"
+                        android:title="@string/projet_circus"
+                        app:showAsAction="never|withText"/>
+                </menu>
+            </item>
             <item
                 android:id="@+id/filter_oldest_first"
                 android:title="@string/sort_oldest_first"

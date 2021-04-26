@@ -1,7 +1,6 @@
 package com.example.cleanup.ui;
 
 import android.annotation.SuppressLint;
-import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.cleanup.R;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
@@ -156,7 +157,10 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.TaskViewHold
 
             final Project taskProject = task.getProject();
             if (taskProject != null) {
-                imgProject.setSupportImageTintList(ColorStateList.valueOf(taskProject.getColor()));
+                Glide.with(itemView.getContext())
+                        .load(task.getProject().getColor())
+                        .apply(RequestOptions.circleCropTransform())
+                        .into(imgProject);
                 lblProjectName.setText(taskProject.getName());
             } else {
                 imgProject.setVisibility(View.INVISIBLE);
