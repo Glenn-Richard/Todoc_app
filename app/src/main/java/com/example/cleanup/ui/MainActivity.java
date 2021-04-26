@@ -2,7 +2,6 @@ package com.example.cleanup.ui;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -51,7 +50,8 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
 
     ArrayList<Task> projects_sorted = new ArrayList<>();
 
-    private  DatabaseManagerRoom database;
+
+    public static DatabaseManagerRoom database;
 
     /**
      * The adapter which handles the list of tasks
@@ -184,7 +184,6 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             // If both project and name of the task have been set
             else if (taskProject != null) {
 
-
                 Task task = new Task(
                         taskProject.getId(),
                         taskName,
@@ -200,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
                 dialogInterface.dismiss();
             }
         }
-        // If dialog is aloready closed
+        // If dialog is already closed
         else {
             dialogInterface.dismiss();
         }
@@ -235,7 +234,6 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      * Updates the list of tasks in the UI
      */
     private void updateTasks() {
-        Log.d("Glen", String.valueOf(tasks.size()));
         if (tasks.size() == 0) {
             lblNoTasks.setVisibility(View.VISIBLE);
             listTasks.setVisibility(View.GONE);

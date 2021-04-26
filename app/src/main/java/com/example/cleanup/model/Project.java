@@ -8,6 +8,9 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 import com.example.cleanup.R;
+import com.example.cleanup.ui.MainActivity;
+
+import java.util.List;
 
 /**
  * <p>Models for project in which tasks are included.</p>
@@ -69,9 +72,10 @@ public class Project {
 
     @Nullable
     public static Project getProjectById(long id) {
-        for (Project project : getAllProjects()) {
-            if (project.id == id)
-                return project;
+       List<Project> projects = MainActivity.database.projectDao().getProjects();
+        for (int i=0;i<projects.size();i++) {
+            if (projects.get(i).getId() == id)
+                return projects.get(i);
         }
         return null;
     }

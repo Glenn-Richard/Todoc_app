@@ -10,8 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
 import com.example.cleanup.R;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
@@ -155,18 +153,14 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.TaskViewHold
             lblTaskName.setText(task.getName());
             imgDelete.setTag(task);
 
-            final Project taskProject = task.getProject();
+            Project taskProject = task.getProject();
             if (taskProject != null) {
-                Glide.with(itemView.getContext())
-                        .load(task.getProject().getColor())
-                        .apply(RequestOptions.circleCropTransform())
-                        .into(imgProject);
+                imgProject.setColorFilter(taskProject.getColor());
                 lblProjectName.setText(taskProject.getName());
             } else {
                 imgProject.setVisibility(View.INVISIBLE);
                 lblProjectName.setText("");
             }
-
         }
     }
 }
