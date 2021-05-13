@@ -1,5 +1,6 @@
 package com.example.cleanup.database;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -19,5 +20,5 @@ public interface ProjectDao {
     void deleteProject(Project project);
 
     @Query("SELECT * FROM Project")
-    List<Project> getProjects();
+    LiveData<List<Project>> getProjects();
 }
