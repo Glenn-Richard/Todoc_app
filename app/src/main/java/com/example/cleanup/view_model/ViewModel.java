@@ -2,6 +2,7 @@ package com.example.cleanup.view_model;
 
 import androidx.lifecycle.LiveData;
 
+import com.example.cleanup.database.DatabaseManagerRoom;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
 import com.example.cleanup.repository.ProjectRepository;
@@ -15,6 +16,7 @@ public class ViewModel extends androidx.lifecycle.ViewModel {
     ProjectRepository projectRepository;
     TaskRepository taskRepository;
     Executor executor;
+    DatabaseManagerRoom database;
 
     public ViewModel(ProjectRepository projectRepository, TaskRepository taskRepository, Executor executor) {
         this.projectRepository = projectRepository;
@@ -27,9 +29,8 @@ public class ViewModel extends androidx.lifecycle.ViewModel {
     public LiveData<List<Project>> getProjects(){
         return projectRepository.getProjects();
     }
-    public LiveData<List<Task>> getTask(){
-        return taskRepository.getTasks();
-    }
+
+    public LiveData<List<Task>> getTask(){ return taskRepository.getTasks(); }
 
     //INSERT
 
@@ -53,5 +54,21 @@ public class ViewModel extends androidx.lifecycle.ViewModel {
     public void deleteTask(Task task){
         executor.execute(() ->
                 taskRepository.deleteTask(task));
+    }
+
+    //FILTER
+
+   public LiveData<List<Task>> getProjectById(int id){
+        return taskRepository.getByIdProject(id);
+   }
+
+   public LiveData<List<Task>> getTasksByDesc(){
+        return taskRepository.getTasksByDesc();
+   }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        database.close();
     }
 }

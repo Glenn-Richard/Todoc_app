@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.example.cleanup.database.DatabaseManagerRoom;
 import com.example.cleanup.model.Project;
+import com.example.cleanup.utils.LiveDataTestUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -34,24 +35,22 @@ public class ProjectInstrumentedTest {
     }
 
     @Test
-    public void checkProjectIsInserted(){
-        Project project = new Project("Projet 1",R.mipmap.projet_lucidia);
-        Assert.assertEquals(0,database.projectDao().getProjects().size());
+    public void checkProjectIsInserted() throws InterruptedException {
+        Project project = new Project(0,"Projet 1",R.mipmap.projet_lucidia);
+        Assert.assertEquals(0, LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
         database.projectDao().insertProject(project);
-        Assert.assertEquals(1,database.projectDao().getProjects().size());
-        Assert.assertTrue(database.projectDao().getProjects().get(0).getName().equals("Projet 1")
-        && database.projectDao().getProjects().get(0).getColor()==R.mipmap.projet_lucidia);
+        Assert.assertEquals(1,LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
+        Assert.assertEquals("Projet 1", LiveDataTestUtil.getValue(database.projectDao().getProjects()).get(0).getName());
     }
     @Test
-    public void checkProjectIsDeleted(){
-        Project project = new Project("Projet 1",R.mipmap.projet_lucidia);
-        Assert.assertEquals(0,database.projectDao().getProjects().size());
+    public void checkProjectIsDeleted() throws InterruptedException {
+        Project project = new Project(0,"Projet 1",R.mipmap.projet_lucidia);
+        Assert.assertEquals(0,LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
         database.projectDao().insertProject(project);
-        Assert.assertEquals(1,database.projectDao().getProjects().size());
-        Assert.assertTrue(database.projectDao().getProjects().get(0).getName().equals("Projet 1")
-                && database.projectDao().getProjects().get(0).getColor()==R.mipmap.projet_lucidia);
-        database.projectDao().deleteProject(database.projectDao().getProjects().get(0));
-        Assert.assertEquals(0,database.projectDao().getProjects().size());
+        Assert.assertEquals(1,LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
+        Assert.assertEquals("Projet 1", LiveDataTestUtil.getValue(database.projectDao().getProjects()).get(0).getName());
+        database.projectDao().deleteProject(database.projectDao().getProjects().getValue().get(0));
+        Assert.assertNotEquals("Projet 1", LiveDataTestUtil.getValue(database.projectDao().getProjects()).get(0).getName());
     }
 
 }

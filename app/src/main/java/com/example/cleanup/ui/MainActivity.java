@@ -1,5 +1,6 @@
 package com.example.cleanup.ui;
 
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.Menu;
@@ -15,26 +16,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cleanup.R;
-import com.example.cleanup.database.DatabaseManagerRoom;
+import com.example.cleanup.injection.DI;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
-import com.example.cleanup.repository.ProjectRepository;
-import com.example.cleanup.repository.TaskRepository;
 import com.example.cleanup.view_model.ViewModel;
+import com.example.cleanup.view_model.ViewModelFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+
+import static com.example.cleanup.R.id.projet_tartampion;
 
 /**
  * <p>Home activity of the application which is displayed when the user opens the app.</p>
@@ -44,38 +41,19 @@ import java.util.concurrent.Executors;
  */
 public class MainActivity extends AppCompatActivity implements TasksAdapter.DeleteTaskListener {
 
-    private List<Project> PROJECTS = new ArrayList<>();
-
-    private ArrayList<Task>  tasks = new ArrayList<>();
-
-    ArrayList<Task> projects_sorted = new ArrayList<>();
-
-    public static DatabaseManagerRoom database;
-
-    private TasksAdapter adapter;
-
-    ViewModel viewModel;
-
-    private ProjectRepository projectRepository;
-    private TaskRepository taskRepository;
-    private Executor executor;
-
-    @NonNull
-    private SortMethod sortMethod = SortMethod.NONE;
-
     @Nullable
     public AlertDialog dialog = null;
-
+    ViewModel viewModel;
+    private final List<Project> PROJECTS = new ArrayList<>();
+    private TasksAdapter adapter;
     @Nullable
     private EditText dialogEditText = null;
 
     @Nullable
     private Spinner dialogSpinner = null;
 
-    @NonNull
     private RecyclerView listTasks;
 
-    @NonNull
     private TextView lblNoTasks;
 
     @Override
@@ -89,11 +67,12 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
 
         setViewModel();
         setCurrentProject();
-        setTasks();
+        setObservers();
         setRecyclerView();
 
-        findViewById(R.id.fab_add_task).setOnClickListener(view -> showAddTaskDialog());
-        updateTasks();
+        findViewById(R.id.fab_add_task).setOnClickListener(v -> showAddTaskDialog()
+        );
+
     }
 
     @Override
@@ -107,62 +86,40 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        setTasks();
-        projects_sorted.addAll(tasks);
 
-        if (id == R.id.projet_tartampion||id == R.id.projet_Lucidia||id == R.id.projet_Circus) {
-            adapter.updateTasks(filterTasksByProject(tasks,id));
+        SortMethod sortMethod;
+        if (id == projet_tartampion || id == R.id.projet_Lucidia || id == R.id.projet_Circus) {
+            filterByProject(id);
         } else if (id == R.id.filter_oldest_first) {
             sortMethod = SortMethod.OLD_FIRST;
-            updateTasks();
+            filterMethod(sortMethod);
         } else if (id == R.id.filter_recent_first) {
             sortMethod = SortMethod.RECENT_FIRST;
-            updateTasks();
+            filterMethod(sortMethod);
         }
 
 
         return super.onOptionsItemSelected(item);
     }
-    /**
-     * List of all possible sort methods for task
-     */
-    private enum SortMethod {
-        /**
-         * Lastly created first
-         */
-        RECENT_FIRST,
-        /**
-         * First created first
-         */
-        OLD_FIRST,
-        /**
-         * No sort
-         */
-        NONE
-    }
-    //SETTERS
 
     private void setRecyclerView() {
         listTasks = findViewById(R.id.list_tasks);
-
-        adapter = new TasksAdapter(tasks, this);
+        adapter = new TasksAdapter(new ArrayList<>(), this);
 
         listTasks.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         listTasks.setAdapter(adapter);
     }
+    //SETTERS
 
-   private void setViewModel() {
-        database = DatabaseManagerRoom.getInstance(this);
-        projectRepository = new ProjectRepository(database.projectDao());
-        taskRepository = new TaskRepository(database.taskDao());
-        executor = Executors.newSingleThreadExecutor();
-        viewModel = ViewModelProviders.of(this,
-                (ViewModelProvider.Factory) new ViewModel(projectRepository,taskRepository,executor))
+    private void setViewModel() {
+
+        ViewModelFactory viewModelFactory = DI.provideViewModelFactory(this);
+        viewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(ViewModel.class);
     }
 
     private void setCurrentProject() {
-        viewModel.getProjects().observe(this, projects -> setProjects(projects));
+        viewModel.getProjects().observe(this, this::setProjects);
     }
 
     private void setProjects(List<Project> projects) {
@@ -170,60 +127,42 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         PROJECTS.addAll(projects);
     }
 
-    private void setTasks() {
-        viewModel.getTask().observe(this, new Observer<List<Task>>() {
-            @Override
-            public void onChanged(List<Task> tasks) {
-                MainActivity.this.tasks.addAll(tasks);
+    private void setObservers() {
+
+        viewModel.getTask().observe(this, tasks -> {
+            if (tasks == null) {
+                tasks = new ArrayList<>();
             }
+            adapter.updateTasks(tasks);
+            updateTasks();
         });
     }
 
     //DATA MANAGEMENT
     private void addTask(@NonNull Task task) {
         viewModel.insertTask(task);
-        tasks.add(task);
-        updateTasks();
     }
 
     /**
      * Updates the list of tasks in the UI
      */
     private void updateTasks() {
-        if (tasks.size() == 0) {
+        if (adapter.getItemCount() == 0) {
             lblNoTasks.setVisibility(View.VISIBLE);
             listTasks.setVisibility(View.GONE);
         } else {
             lblNoTasks.setVisibility(View.GONE);
             listTasks.setVisibility(View.VISIBLE);
-            switch (sortMethod) {
-                case RECENT_FIRST:
-                    Collections.sort(tasks, new Task.TaskRecentComparator());
-                    break;
-                case OLD_FIRST:
-                    Collections.sort(tasks, new Task.TaskOldComparator());
-                    break;
-            }
-            adapter.updateTasks(tasks);
         }
     }
 
     @Override
     public void onDeleteTask(Task task) {
         deleteTask(task);
-        updateTasks();
     }
 
     private void deleteTask(Task task) {
         viewModel.deleteTask(task);
-        tasks.remove(task);
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        database.close();
     }
 
     //ALERT DIALOG
@@ -234,32 +173,19 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         alertBuilder.setTitle(R.string.add_task);
         alertBuilder.setView(R.layout.dialog_add_task);
         alertBuilder.setPositiveButton(R.string.add, null);
-        alertBuilder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                dialogEditText = null;
-                dialogSpinner = null;
-                dialog = null;
-            }
+        alertBuilder.setOnDismissListener(dialogInterface -> {
+            dialogEditText = null;
+            dialogSpinner = null;
+            dialog = null;
         });
 
         dialog = alertBuilder.create();
 
         // This instead of listener to positive button in order to avoid automatic dismiss
-        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+        dialog.setOnShowListener(dialogInterface -> {
 
-            @Override
-            public void onShow(DialogInterface dialogInterface) {
-
-                Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                button.setOnClickListener(new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-                        onPositiveButtonClick(dialog);
-                    }
-                });
-            }
+            Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(view -> onPositiveButtonClick(dialog));
         });
 
         return dialog;
@@ -275,7 +201,6 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
             dialogSpinner.setAdapter(adapter);
         }
     }
-
 
     /**
      * Called when the user clicks on the positive button of the Create Task Dialog.
@@ -312,7 +237,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
                 dialogInterface.dismiss();
             }
             // If name has been set, but project has not been set (this should never occur)
-            else{
+            else {
                 dialogInterface.dismiss();
             }
         }
@@ -336,32 +261,70 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
         populateDialogSpinner();
     }
 
-    public ArrayList<Task> filterTasksByProject(List<Task> taskList, int id){
-        ArrayList<Task> sorted_tasks = new ArrayList<>();
-        if (id == R.id.projet_tartampion){
-            for (int i=0;i<taskList.size();i++){
-                if (taskList.get(i).getProjectId()==1){
-                    sorted_tasks.add(taskList.get(i));
-                }
-            }
-            return sorted_tasks;
+    public void filterMethod(MainActivity.SortMethod name) {
+
+        switch (name) {
+            case RECENT_FIRST:
+                viewModel.getTasksByDesc().observe(this, tasks -> {
+                    if (tasks == null) {
+                        tasks = new ArrayList<>();
+                    }
+                    adapter.updateTasks(tasks);
+                    updateTasks();
+                });
+                break;
+            case OLD_FIRST:
+                setObservers();
+                break;
         }
-        if (id == R.id.projet_Lucidia){
-            for (int i=0;i<taskList.size();i++){
-                if (taskList.get(i).getProjectId()==2){
-                    sorted_tasks.add(taskList.get(i));
-                }
-            }
-            return sorted_tasks;
+    }
+
+    @SuppressLint("NonConstantResourceId")
+    public void filterByProject(int id) {
+        switch (id) {
+            case projet_tartampion:
+                viewModel.getProjectById(1).observe(this, tasks -> {
+                    if (tasks == null) {
+                        tasks = new ArrayList<>();
+                    }
+                    adapter.updateTasks(tasks);
+                    updateTasks();
+                });
+                break;
+
+            case R.id.projet_Lucidia:
+                viewModel.getProjectById(2).observe(this, tasks -> {
+                    if (tasks == null) {
+                        tasks = new ArrayList<>();
+                    }
+                    adapter.updateTasks(tasks);
+                    updateTasks();
+                });
+                break;
+
+            case R.id.projet_Circus:
+                viewModel.getProjectById(3).observe(this, tasks -> {
+                    if (tasks == null) {
+                        tasks = new ArrayList<>();
+                    }
+                    adapter.updateTasks(tasks);
+                    updateTasks();
+                });
+                break;
         }
-        if (id == R.id.projet_Circus){
-            for (int i=0;i<taskList.size();i++){
-                if (taskList.get(i).getProjectId()==3){
-                    sorted_tasks.add(taskList.get(i));
-                }
-            }
-            return sorted_tasks;
-        }
-        return sorted_tasks;
+    }
+
+    /**
+     * List of all possible sort methods for task
+     */
+    public enum SortMethod {
+        /**
+         * Lastly created first
+         */
+        RECENT_FIRST,
+        /**
+         * First created first
+         */
+        OLD_FIRST
     }
 }

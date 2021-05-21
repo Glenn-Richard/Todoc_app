@@ -9,8 +9,8 @@ import androidx.room.RoomDatabase;
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
 
-@Database(entities = {Project.class, Task.class},version = 1,exportSchema = false)
-public abstract class DatabaseManagerRoom extends RoomDatabase {
+@Database(entities = {Project.class, Task.class},version = 2,exportSchema = false)
+public abstract class  DatabaseManagerRoom extends RoomDatabase {
 
     static volatile DatabaseManagerRoom INSTANCE;
     public static DatabaseManagerRoom getInstance(Context context){
@@ -22,6 +22,9 @@ public abstract class DatabaseManagerRoom extends RoomDatabase {
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
                             .build();
+                    for (int i=0;i<Project.getAllProjects.size();i++){
+                        INSTANCE.projectDao().insertProject(Project.getAllProjects.get(i));
+                    }
                 }
             }
         }

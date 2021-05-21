@@ -1,13 +1,15 @@
 package com.example.cleanup;
 
+import android.content.Context;
+
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.room.Room;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.example.cleanup.database.DatabaseManagerRoom;
-import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
+import com.example.cleanup.utils.LiveDataTestUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -34,63 +36,60 @@ public class TaskInstrumentedTest {
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
     @Before
-    public void initDb() throws Exception {
-        this.database = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().getContext(),
-                 DatabaseManagerRoom.class)
+    public void initDb() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        this.database = Room.databaseBuilder(context.getApplicationContext(),
+                DatabaseManagerRoom.class, "database.db")
                 .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
                 .build();
     }
 
     @After
-    public void closeDb() throws Exception {
+    public void closeDb() {
+        database.clearAllTables();
         database.close();
     }
 
     @Test
-    public void checkInsertAndReadTask(){
+    public void checkInsertAndReadTask() throws InterruptedException {
         long timeCreation = new Date().getTime();
-        Project project = new Project("toto",R.mipmap.projet_circus);
-        database.projectDao().insertProject(project);
-        Task task = new Task(database.projectDao().getProjects().get(0).getId(),"nettoyer cuisine",timeCreation);
+        Task task = new Task(1,"nettoyer cuisine",timeCreation);
         database.taskDao().insertTask(task);
-        Assert.assertTrue(this.database.taskDao().getTasks().get(0).getName().contains("nettoyer cuisine")&&
-                this.database.taskDao().getTasks().get(0).getCreationTimestamp()==timeCreation);
+        Assert.assertEquals("nettoyer cuisine", LiveDataTestUtil.getValue(database.taskDao().getTasks()).get(0).getName());
         database.clearAllTables();
     }
 
     @Test
-    public void checkTaskIsDelete(){
+    public void checkTaskIsDelete() throws InterruptedException {
         long timeCreation = new Date().getTime();
-        int initSize = database.taskDao().getTasks().size();
-        Project project = new Project("project 2",R.mipmap.projet_circus);
-        database.projectDao().insertProject(project);
-        Task task = new Task(database.projectDao().getProjects().get(0).getId(),"laver carreaux",timeCreation);
+        int initSize = LiveDataTestUtil.getValue(database.taskDao().getTasks()).size();
+        Assert.assertEquals(0,initSize);
+        Task task = new Task(1,"laver carreaux",timeCreation);
         database.taskDao().insertTask(task);
-        Assert.assertTrue(database.taskDao().getTasks().size()!=initSize
-        && database.taskDao().getTasks().get(0).getCreationTimestamp()==timeCreation);
-        database.taskDao().deleteTask(database.taskDao().getTasks().get(0));
-        Assert.assertTrue(database.taskDao().getTasks().size()==initSize);
-        Assert.assertFalse(database.taskDao().getTasks().contains(task));
+        Assert.assertEquals("laver carreaux", LiveDataTestUtil.getValue(database.taskDao().getTasks()).get(0).getName());
+        Assert.assertTrue(LiveDataTestUtil.getValue(database.taskDao().getTasks()).size()!=initSize);
+        Assert.assertEquals(1,LiveDataTestUtil.getValue(database.taskDao().getTasks()).size());
+        database.taskDao().deleteTask(database.taskDao().getTasks().getValue().get(0));
+        Assert.assertEquals(initSize, LiveDataTestUtil.getValue(database.taskDao().getTasks()).size());
         database.clearAllTables();
     }
 
     @Test
-    public void checkGetAllTasks(){
-        Project project = new Project("Projet 1",R.mipmap.projet_circus);
-        database.projectDao().insertProject(project);
-        Assert.assertEquals(0,database.taskDao().getTasks().size());
+    public void checkGetAllTasks() throws InterruptedException {
+
+        Assert.assertEquals(0,LiveDataTestUtil.getValue(database.taskDao().getTasks()).size());
         List<Task> tasks = Arrays.asList(
-                new Task(database.projectDao().getProjects().get(0).getId(),"task1",new Date().getTime()),
-                new Task(database.projectDao().getProjects().get(0).getId(),"task2",new Date().getTime()),
-                new Task(database.projectDao().getProjects().get(0).getId(),"task3",new Date().getTime())
+                new Task(1,"task1",new Date().getTime()),
+                new Task(1,"task2",new Date().getTime()),
+                new Task(1,"task3",new Date().getTime())
         );
         int i = 0;
         while(i<tasks.size()){
             database.taskDao().insertTask(tasks.get(i));
             i++;
         }
-        Assert.assertEquals(3,database.taskDao().getTasks().size());
-        database.clearAllTables();
+        Assert.assertEquals(3,LiveDataTestUtil.getValue(database.taskDao().getTasks()).size());
     }
 
 }
