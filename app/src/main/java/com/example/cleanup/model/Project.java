@@ -23,7 +23,7 @@ public class Project {
 
 
 
-    @PrimaryKey()
+    @PrimaryKey
     private long id;
 
     @NonNull

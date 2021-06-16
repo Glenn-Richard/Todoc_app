@@ -2,12 +2,16 @@ package com.example.cleanup.database;
 
 import android.content.Context;
 
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Observer;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
 import com.example.cleanup.model.Project;
 import com.example.cleanup.model.Task;
+
+import java.util.List;
 
 @Database(entities = {Project.class, Task.class},version = 2,exportSchema = false)
 public abstract class  DatabaseManagerRoom extends RoomDatabase {
@@ -22,9 +26,14 @@ public abstract class  DatabaseManagerRoom extends RoomDatabase {
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
                             .build();
-                    for (int i=0;i<Project.getAllProjects.size();i++){
-                        INSTANCE.projectDao().insertProject(Project.getAllProjects.get(i));
-                    }
+
+                    INSTANCE.projectDao().getProjects().observe((LifecycleOwner) context, projects -> {
+                        if (projects.size()==0){
+                            for (int i=0;i<Project.getAllProjects.size();i++) {
+                                INSTANCE.projectDao().insertProject(Project.getAllProjects.get(i));
+                            }
+                        }
+                    });
                 }
             }
         }

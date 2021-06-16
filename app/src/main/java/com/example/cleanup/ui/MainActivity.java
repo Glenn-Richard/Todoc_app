@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     /**
      * Shows the Dialog for adding a Task
      */
-    private void showAddTaskDialog() {
+    private void  showAddTaskDialog() {
         final AlertDialog dialog = getAddTaskDialog();
 
         dialog.show();
