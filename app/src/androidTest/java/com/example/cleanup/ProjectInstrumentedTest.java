@@ -37,7 +37,6 @@ public class ProjectInstrumentedTest {
     @Test
     public void checkProjectIsInserted() throws InterruptedException {
         Project project = new Project(0,"Projet 1",R.mipmap.projet_lucidia);
-        //creer conztante
         Assert.assertEquals(0, LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
         database.projectDao().insertProject(project);
         Assert.assertEquals(1,LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
