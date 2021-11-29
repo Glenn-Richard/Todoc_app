@@ -79,7 +79,7 @@ public class TaskInstrumentedTest {
         Assert.assertEquals(initSize, LiveDataTestUtil.getValue(database.taskDao().getTasks()).size());
         database.clearAllTables();
     }
-
+//simpleumlce
     @Test
     public void checkGetAllTasks() throws InterruptedException {
 

@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     @Nullable
     public AlertDialog dialog = null;
     ViewModel viewModel;
-    private final List<Project> PROJECTS = new ArrayList<>();
+    private final List<Project> projects = new ArrayList<>();
     private TasksAdapter adapter;
     @Nullable
     private EditText dialogEditText = null;
@@ -123,8 +123,8 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
     }
 
     private void setProjects(List<Project> projects) {
-        PROJECTS.clear();
-        PROJECTS.addAll(projects);
+        this.projects.clear();
+        this.projects.addAll(projects);
     }
 
     private void setObservers() {
@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity implements TasksAdapter.Dele
      * Sets the data of the Spinner with projects to associate to a new task
      */
     private void populateDialogSpinner() {
-        final ArrayAdapter<Project> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, PROJECTS);
+        final ArrayAdapter<Project> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, projects);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (dialogSpinner != null) {
             dialogSpinner.setAdapter(adapter);

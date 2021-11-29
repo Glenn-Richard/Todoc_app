@@ -42,6 +42,7 @@ public class ProjectInstrumentedTest {
         Assert.assertEquals(1,LiveDataTestUtil.getValue(database.projectDao().getProjects()).size());
         Assert.assertEquals("Projet 1", LiveDataTestUtil.getValue(database.projectDao().getProjects()).get(0).getName());
     }
+
     @Test
     public void checkProjectIsDeleted() throws InterruptedException {
         Project project = new Project(0,"Projet 1",R.mipmap.projet_lucidia);
