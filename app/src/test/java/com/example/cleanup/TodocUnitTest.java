@@ -16,6 +16,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 
 public class TodocUnitTest extends Assert {
@@ -38,28 +39,28 @@ public class TodocUnitTest extends Assert {
     }
     @Test
     public void getTasksWithSuccess(){
-        assertEquals(0,database.taskDao().getTasks().size());
+        assertEquals(0, Objects.requireNonNull(database.taskDao().getTasks().getValue()).size());
         List<Task> tasks = Arrays.asList(
-                new Task(database.projectDao().getProjects().get(0).getId(),"task1",new Date().getTime()),
-                new Task(database.projectDao().getProjects().get(0).getId(),"task2",new Date().getTime()),
-                new Task(database.projectDao().getProjects().get(0).getId(),"task3",new Date().getTime())
+                new Task(Objects.requireNonNull(database.projectDao().getProjects().getValue()).get(0).getId(),"task1",new Date().getTime()),
+                new Task(Objects.requireNonNull(database.projectDao().getProjects().getValue()).get(0).getId(),"task2",new Date().getTime()),
+                new Task(Objects.requireNonNull(database.projectDao().getProjects().getValue()).get(0).getId(),"task3",new Date().getTime())
         );
         int i = 0;
         while(i<tasks.size()){
             database.taskDao().insertTask(tasks.get(i));
             i++;
         }
-        Assert.assertEquals(3,database.taskDao().getTasks().size());
+        Assert.assertEquals(3, Objects.requireNonNull(database.taskDao().getTasks().getValue()).size());
         database.clearAllTables();
     }
 
     @Test
     public void insertTaskWithSuccess(){
-        assertEquals(0,database.taskDao().getTasks().size());
+        assertEquals(0, Objects.requireNonNull(database.taskDao().getTasks().getValue()).size());
         long timeCreation = new Date().getTime();
-        Task task = new Task(database.projectDao().getProjects().get(0).getId(),"nettoyer cuisine",timeCreation);
+        Task task = new Task(Objects.requireNonNull(database.projectDao().getProjects().getValue()).get(0).getId(),"nettoyer cuisine",timeCreation);
         database.taskDao().insertTask(task);
-        assertEquals(1,database.taskDao().getTasks().size());
-        assertTrue(database.taskDao().getTasks().contains(task));
+        assertEquals(1, Objects.requireNonNull(database.taskDao().getTasks().getValue()).size());
+        assertTrue(Objects.requireNonNull(database.taskDao().getTasks().getValue()).contains(task));
     }
 }
